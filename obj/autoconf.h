@@ -12,14 +12,8 @@
 #define CONFIG_HAVE_PKG_CONFIG 1
 #define CONFIG_HAVE_PKG_CONFIG_VERSION 0028
 #define CONFIG_HAVE_PKG_CONFIG_VERSION_STRING 0.28
-#define CONFIG_HAVE_GTK__3_0 1
-#define CONFIG_HAVE_GTK__3_0_VERSION 3.10.8
-#define CONFIG_HAVE_GTK__3_0_CFLAGS -pthread -I/usr/include/gtk-3.0 -I/usr/include/at-spi2-atk/2.0 -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libdrm -I/usr/include/libpng16 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include 
-#define CONFIG_HAVE_GTK__3_0_LDFLAGS -lgtk-3 -lgdk-3 -lpangocairo-1.0 -lpango-1.0 -latk-1.0 -lcairo-gobject -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lgobject-2.0 -lglib-2.0 
-#define CONFIG_HAVE_LIBPNG 1
-#define CONFIG_HAVE_LIBPNG_VERSION 1.6.3
-#define CONFIG_HAVE_LIBPNG_CFLAGS -I/usr/include/libpng16 
-#define CONFIG_HAVE_LIBPNG_LDFLAGS -lpng16 
+#define CONFIG_HAVE_GTK__WIN32_3_0_STATIC_CFLAGS -mms-bitfields -I/usr/i686-w64-mingw32/build/include/gtk-3.0 -I/usr/i686-w64-mingw32/build/include/cairo -I/usr/i686-w64-mingw32/build/include/pango-1.0 -I/usr/i686-w64-mingw32/build/include/atk-1.0 -I/usr/i686-w64-mingw32/build/include/cairo -I/usr/i686-w64-mingw32/build/include/pixman-1 -I/usr/i686-w64-mingw32/build/include -I/usr/i686-w64-mingw32/build/include/freetype2 -I/usr/i686-w64-mingw32/build/include -I/usr/i686-w64-mingw32/build/include/libpng15 -I/usr/i686-w64-mingw32/build/include/gdk-pixbuf-2.0 -I/usr/i686-w64-mingw32/build/include/libpng15 -I/usr/i686-w64-mingw32/build/include/glib-2.0 -I/usr/i686-w64-mingw32/build/lib/glib-2.0/include 
+#define CONFIG_HAVE_GTK__WIN32_3_0_STATIC_LDFLAGS -L/usr/i686-w64-mingw32/build/lib -lgtk-3 -lgdk-3 -lgdk_pixbuf-2.0 -lgobject-2.0 -lglib-2.0 -lpango-1.0 -latk-1.0 -lcairo -lcairo-gobject -lpangocairo-1.0 -lintl -lgmodule-2.0 -lgio-2.0 -limm32 -luser32 -lgdi32 -luuid -lole32 -lpng -lgdiplus -lpangowin32-1.0 -lffi -lws2_32 -lwinmm -lglib-2.0 -lpixman-1 -lfreetype -lfontconfig -lpangoft2-1.0 -lmsimg32 -liconv -lshlwapi -lz -lgdi32 -ldnsapi -lusp10 -lfreetype -lexpat -lgcc -lkernel32 -lmsvcrt 
 #define CONFIG_HAVE_LIBQRENCODE 1
 #define CONFIG_HAVE_LIBQRENCODE_VERSION 3.4.2
 #define CONFIG_HAVE_LIBQRENCODE_LDFLAGS -lqrencode 

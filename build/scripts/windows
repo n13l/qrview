@@ -6,10 +6,7 @@ LIBS+=-lcomdlg32 -lwinspool -lcomctl32 -lsetupapi -lwininet -lwin32spl \
  -lole32 -lshlwapi
 
 ifeq (${CPU_ARCH},x86_64)
-LIBS+=-lasm64
-LDFLAGS+=-L$(s)/build/arch/win-x86_64
 else
-LIBS+=-lasm32
-LDFLAGS+=-L$(s)/build/arch/win-x86
+CFLAGS+=-I/build/arch/win-x86/include
 endif
 .PHONY: $(LIBS)

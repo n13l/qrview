@@ -14,9 +14,14 @@ static uint8_t window_size;
 static gboolean
 update(gpointer data)
 {
+	GtkWidget *widget = (GtkWidget *)data;
+
 	static int count = 15;
+	/*
 	if (!--count)
 		gtk_main_quit();
+*/
+//	gtk_widget_queue_draw(widget);
 
 	return TRUE;
 }
@@ -28,47 +33,41 @@ screen_changed(GtkWidget *widget, GdkScreen *old_screen, gpointer userdata)
 	GdkVisual *visual = gdk_screen_get_rgba_visual (screen);
 
 	if (!visual) {
-		printf("Your screen does not support alpha channels!\n");
+		fprintf(stderr, "Your screen does not support alpha channels!\n");
 		supports_alpha = FALSE;
-		exit(1);
 	} else {
-		printf("Your screen supports alpha channels!\n");
 		gtk_widget_set_visual (GTK_WIDGET (widget), visual);
 		supports_alpha = TRUE;
-	}
+		/* Now we have a colormap appropriate for the screen, use it */
+		//gtk_widget_set_visual(widget, visual);
 
-	/* Now we have a colormap appropriate for the screen, use it */
-	gtk_widget_set_visual(widget, visual);
+	}
 }
 
 static gboolean 
-expose(GtkWidget *w, cairo_t *ctx, gpointer p)
+draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 {
 	GdkWindow *gwin = gtk_widget_get_window(w);
+
+	int width, height;
+	gtk_window_get_size(GTK_WINDOW(w), &width, &height);
+
+	cairo_set_source_rgb (ctx, 0.0, 0.0, 0.0);
+	cairo_rectangle(ctx, 30, 30, width - 60 , height - 60);
+	cairo_set_line_width(ctx, 30);
+	cairo_set_line_join(ctx, CAIRO_LINE_JOIN_ROUND); 
+	cairo_stroke(ctx); 
 
 	if (supports_alpha)
-		cairo_set_source_rgba (ctx, 1.0, 1.0, 1.0, 1); /* transparent */
+		cairo_set_source_rgba (ctx, 1.0, 1.0, 1.0, 1); 
 	else
-		cairo_set_source_rgb (ctx, 1.0, 1.0, 1.0); /* opaque white */
+		cairo_set_source_rgb (ctx, 1.0, 1.0, 1.0);
 
 	/* draw the background */
-	cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-        cairo_set_source_surface(ctx, cimage, 20, 20);
+	//cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
+        cairo_set_source_surface(ctx, cimage, 40, 40);
 	cairo_paint(ctx);
-
 	return FALSE;
-}
-
-static gboolean
-on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
-{
-	GdkWindow *gwin = gtk_widget_get_window(w);
-
-	cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface(ctx, cimage, 20, 20);
-	cairo_paint(ctx);
-
-	return TRUE;
 }
 
 static void
@@ -80,14 +79,13 @@ get_screen_size(GtkWidget *w, int *width, int *height)
 }
 
 static void
-window_set_size(GtkWidget *win)
+window_set_size(GtkWidget *win, int width)
 {
 	int w, h;
 	get_screen_size(win, &w, &h);
 
-	window_size = w / 4;
-
-	gtk_widget_set_size_request(GTK_WIDGET(win), w / 4, w / 4);
+	int size = width + 100;
+	gtk_widget_set_size_request(GTK_WIDGET(win), size, size);
 }
 
 static void
@@ -102,18 +100,9 @@ window_setup(GtkWidget *w)
 	//gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
 
 	g_signal_connect (w, "destroy", G_CALLBACK (gtk_main_quit), NULL);
-	g_signal_connect (w, "draw", G_CALLBACK (expose), NULL);
+	g_signal_connect (w, "draw", G_CALLBACK (draw), NULL);
 	g_signal_connect(w, "screen-changed", G_CALLBACK(screen_changed), NULL);
 }
-
-struct surface {
-	uint32_t size;
-	uint32_t width;
-	uint32_t height;
-	uint32_t stride;
-	uint8_t *pixels;
-	int alpha;
-};
 
 static void
 surface_write_row(uint8_t **ptr, uint8_t *from, int size, int stride)
@@ -125,35 +114,33 @@ surface_write_row(uint8_t **ptr, uint8_t *from, int size, int stride)
 }
 
 static cairo_surface_t *
-qrcode_cairo_surface(QRcode *qr, int margin, int size)
+qrcode_cairo_surface(struct surface *surface, int margin, int size)
 {
 	cairo_surface_t *cimage;
-	margin = 0;
-	size = 10;
 
-	int width = (qr->width + margin * 2) * size + (size * 2);
+	int width = (surface->width + margin * 2) * size + (size * 2);
 	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 
 	uint8_t *pixels = malloc(stride * width * 10);
 	uint8_t *row = malloc(stride);
 	uint8_t *pix = pixels;
-	uint8_t *src = qr->data;
+	uint8_t *src = surface->data;
 	uint8_t *dst = row;
 
 	/* top margin */
 	memset(row, 0xff, stride);
 	surface_write_row(&pix, row, size, stride);
 
-	for (int i = 0; i < qr->width; i++) {
+	for (int i = 0; i < surface->width; i++) {
 		dst = row;
 		memset(row, 0xff, stride);
 		dst += size * 4;
-		for (int y = 0; y < qr->width; y++) {
+		for (int y = 0; y < surface->width; y++) {
 			for (int yy = 0; yy < size; yy++) {
 				*dst++ = *src & 1 ? 0 : 255;
 				*dst++ = *src & 1 ? 0 : 255;
 				*dst++ = *src & 1 ? 0 : 255;
-				*dst++ = 128; //*src & 1 ? 255 : 0;
+				*dst++ = 0xff;
 			}
 			src++;
 		}
@@ -171,17 +158,18 @@ qrcode_cairo_surface(QRcode *qr, int margin, int size)
 }
 
 int
-main_window(int argc, char *argv[]) 
+main_window(int argc, char *argv[], struct surface *surface)
 {
 	gtk_init (&argc, &argv);
 
 	GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
+	window_set_size(win, surface->width * 10);
 	window_setup(win);
-	window_set_size(win);
-	cimage = qrcode_cairo_surface(qrcode, 0, 10);
 
-	g_timeout_add_seconds (1, update, NULL);
+	cimage = qrcode_cairo_surface(surface, 0, 10);
+
+	g_timeout_add_seconds (1, update, win);
 
 	screen_changed(win, NULL, NULL);
 

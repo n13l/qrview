@@ -216,12 +216,13 @@ ifeq (${CONFIG_PKGCONFIG},1)
 	$(call require,pkg-config,--version,gte,0.21)
 
 	@printf "\n"
-
+ifndef CONFIG_WINDOWS
 	$(call pkg-config-package,gtk+-3.0)
-	$(call pkg-config-package,libpng)
+else
+#$(call pkg-config-package,gtk+-win32-3.0)
+	$(call pkg-config-package,gtk+-win32-3.0-static)
+endif
 	$(call pkg-config-package,libqrencode)
-	$(call pkg-config-package,libaa)
-
 	@printf "\n"
 
 endif

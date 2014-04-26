@@ -5,14 +5,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <qrencode.h>
+
+struct surface {
+	uint8_t width;
+	uint8_t *data;
+	uint8_t alpha;
+};
 
 int
-main_window(int argc, char *argv[]);
-
-void
-qr_encode_uri(const char *uri);
-
-extern QRcode *qrcode;
+main_window(int argc, char *argv[], struct surface *surface);
 
 #endif
