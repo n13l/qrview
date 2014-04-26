@@ -1,0 +1,114 @@
+s?=.
+o?=./obj
+
+-include $(s)/.config
+
+all: runtree programs api
+
+CFLAGS+=-g -I$(s) -I$(s)/src -I$(s)/obj -I$(s)/src/sys -I$(s)/src/asm 
+
+-include $(s)/.defconfig
+#include $(s)/build/gmsl
+
+#ifeq ($(DEBUG),1)
+#include $(s)/build/gmd
+#endif
+
+ifeq ($(CONFIG_DARWIN),1)
+DYNAMIC_LIBRARIES=dylib
+SOEXT=bundle
+OO=oo
+CSHARED=-fPIC
+HOST_PREFIX=/opt/local
+endif
+ifeq ($(CONFIG_WINDOWS),1)
+DYNAMIC_LIBRARIES=so
+SOEXT=so
+OO=oo
+endif
+ifeq ($(CONFIG_LINUX),1)
+DYNAMIC_LIBRARIES=so
+SOEXT=so
+OO=oo
+CSHARED=-fPIC
+HOST_PREFIX=/usr/local
+endif
+
+
+#ifdef CONFIG_DARWIN
+#DYNAMIC_LIBRARIES=dylib
+#SOEXT=bundle
+#HOST_PREFIX=/opt/local
+#else
+#DYNAMIC_LIBRARIES=so
+#SOEXT=so
+#HOST_PREFIX=
+#endif
+
+ifdef CONFIG_SHARED
+LS=$(DYNAMIC_LIBRARIES)
+OO=o
+else
+OO=o
+LS=a
+endif
+
+ifeq ($(CONFIG_WINDOWS),1)
+SO=dll
+OO=o
+else
+OO=oo
+CSHARED=-fPIC
+SO=so
+endif
+
+INSTALLDIR=./run
+BUILDSYS=$(s)/build
+
+LSHARED=-shared
+
+ifeq ($(DEBUG),1)
+CFLAGS+=-ggdb
+else
+CFLAGS+=-O3
+endif
+
+ifeq (${V},1)
+M=@\#
+Q=
+MAKESILENT=
+else
+M=@echo #
+Q=@
+MAKESILENT=-s
+endif
+
+o=obj
+
+# Clean needs to be a double-colon rule since we want sub-makefiles to be able
+# to define their own cleanup actions.
+dust::
+#	$(Q)rm -f `find . -path "*~" -or -name "\#*\#"`
+	$(Q)rm -f allocs.tmp cscope.out TAGS
+
+clean:: dust
+	$(Q)if [ -d $(s)/obj ] ; then rm -rf `find ./obj/* -not -name "autoconf.h" -not -name "config.mk"` ; fi
+	$(Q)rm -rf run/{bin,lib,include,.tree-stamp,doc}
+
+distclean:: clean
+	$(Q)rm -rf obj run
+	$(Q)rm -rf .config
+
+testclean::
+#	$(Q)rm -f `find obj/ -name "*.test"`
+
+install:: install_targets
+
+eq = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+# Relative symlinks and other pathname manipulation macros
+empty:=
+space:=$(empty) $(empty)
+backref=$(subst $(space),/,$(patsubst %,..,$(subst /,$(space),$(1))))
+tack-on=$(if $(patsubst /%,,$(2)),$(1)/$(2),$(2))
+symlink=ln -sf $(call tack-on,$(call backref,$(2)),$(1)) $(2)/
+symlink-alias=ln -sf $(call tack-on,$(call backref,$(2)),$(1)) $(2)/$(3)

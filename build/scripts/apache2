@@ -1,0 +1,12 @@
+define check_apache2
+	@printf "\n"                                                            
+	@printf "Checking for apache2              ... "
+        @$(eval CONFIG_HAVE_APACHE2=$(shell apxs -q INCLUDEDIR 2>/dev/null))
+        @$(if $(CONFIG_HAVE_APACHE2), $(call config-set, CONFIG_HAVE_APACHE2, y))
+        @$(if $(CONFIG_HAVE_APACHE2), echo Yes, echo No)
+
+        @$(if $(CONFIG_HAVE_APACHE2), printf "Checking for apache2 modules dir  ... ", )
+	@$(if $(CONFIG_HAVE_APACHE2), $(eval APACHE2_MODULES_DIR = $(shell apxs -q 2>/dev/null | grep ^exp_libexecdir | cut -d"=" -f2 2>/dev/null)))
+	@$(if $(APACHE2_MODULES_DIR), $(call config-set, APACHE2_MODULES_DIR, $(APACHE2_MODULES_DIR)))
+	@$(if $(APACHE2_MODULES_DIR), printf "Yes ($(APACHE2_MODULES_DIR))\n", printf "No: update apxs tool\n")
+endef

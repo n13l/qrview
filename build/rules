@@ -1,0 +1,156 @@
+# Rules for compiling C
+
+$(o)/%.s: $(o)/%.c
+	$(CC) -S -fverbose-asm $(CFLAGS) -c -o $@.s $<
+
+$(o)/%.o: $(s)/%.c $(o)/autoconf.h
+	$(M)CC $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -c -o $@ $<
+ifeq (${ASM},1)
+ifeq (${CONFIG_DARWIN},1)
+	$(Q)otool -tV $@ > $@.asm
+else
+	$(Q)objdump -S $@ > $@.asm
+endif
+endif
+
+$(o)/%.o: %.c $(o)/autoconf.h
+	$(M)CC $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -c -o $@ $<
+
+%.o: %.c $(o)/autoconf.h
+	$(M)CC $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -c -o $@ $<
+
+$(o)/%.oo: $(s)/%.c $(o)/autoconf.h
+	$(M)SO $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) $(CSHARED) -c -o $@ $<
+
+$(o)/%.oo: %.c $(o)/autoconf.h
+	$(M)SO $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) $(CSHARED) -c -o $@ $<
+
+%.oo: %.c $(o)/autoconf.h
+	$(M)SO $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) $(CSHARED) -c -o $@ $<
+
+$(o)/%-tt.o: $(s)/%.c $(o)/autoconf.h
+	$(M)CC-TEST $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -DTEST -c -o $@ $<
+
+$(o)/%.o: %.c
+	$(M) "CC $<"
+	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
+
+%.a:
+	$(M)AR $@
+	$(Q)rm -f $@
+	$(Q)ar rcs $@ $^
+	$(Q)$(call symlink,$@,run/$(LIBDIR))
+
+
+%.so:
+	$(M)LD $@
+	$(Q)$(CC) $(LSHARED) $(LDFLAGS) -o $@ $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(BUILDSYS)/lib-flags $^) $(LIBS)
+	$(Q)$(call symlink-alias,$@,run/$(SO_RUNDIR),$(*F)$(SONAME_INFIX).so$(SONAME_SUFFIX))
+
+#%.dll: %.so
+#	$(Q)cd $(dir $<) && ln -fs $(notdir $<) $(notdir $@)
+#
+#
+%.dll:
+	$(M)LD $@
+	$(Q)$(CC) $(LSHARED) $(LDFLAGS) -o $@ $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(BUILDSYS)/lib-flags $^) $(LIBS)
+#	$(Q)$(call symlink-alias,$@,run/$(SO_RUNDIR),$(*F)$(SONAME_INFIX).dll$(SONAME_SUFFIX))
+
+run/lib/pkgconfig/%.pc:         # RHS supplied in the sub-makefile
+	$(M)PC-API $@
+	$(Q)sed <$< >$@ "s@^libdir=.*@libdir=$(API_LIBDIR)@;s@^incdir=.*@incdir=$(API_INCDIR)@"
+
+$(o)/%.pc: $(s)/%.pc $(o)/%.$(LS)
+	$(M)PC $<
+	$(Q)DEPS="$(shell $(BUILDSYS)/lib-deps $^)" LIBDIR=$(@D) $(BUILDSYS)/genconf $< $@ $(o)/config.mk
+	$(Q)mkdir -p $(o)/pkgconfig
+	$(Q)$(call symlink,$@,$(o)/pkgconfig)
+
+$(o)/%: $(o)/%.o
+	$(M)LD $@
+	$(Q)$(CC) $(LDFLAGS) -o $@ $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(BUILDSYS)/lib-flags $^) $(LIBS)
+	$(Q)$(call symlink,$@,run/$(BINDIR))
+
+$(o)/%: $(s)/%.sh $(o)/config.mk $(BUILDSYS)/genconf
+	$(M)PP $<
+	$(Q)$(BUILDSYS)/genconf $< $@ $(o)/config.mk
+	$(Q)chmod +x $@
+	$(Q)$(call symlink,$@,run/$(BINDIR))
+
+$(o)/%: %.sh $(o)/config.mk $(BUILDSYS)/genconf
+	$(M)PP $<
+	$(Q)$(BUILDSYS)/genconf $< $@ $(o)/config.mk
+	$(Q)chmod +x $@
+	$(Q)$(call symlink,$@,run/$(BINDIR))
+
+$(o)/%: $(s)/%.pl $(o)/config.mk $(BUILDSYS)/genconf
+	$(M)PP $<
+	$(Q)$(BUILDSYS)/genconf $< $@ $(o)/config.mk
+	$(Q)chmod +x $@
+	$(Q)$(call symlink,$@,run/$(BINDIR))
+
+$(o)/%: %.pl $(o)/config.mk $(BUILDSYS)/genconf
+	$(M)PP $<
+	$(Q)$(BUILDSYS)/genconf $< $@ $(o)/config.mk
+	$(Q)chmod +x $@
+	$(Q)$(call symlink,$@,run/$(BINDIR))
+
+#$(o)/%: $(o)/%.oo
+#	$(M) "LD $@"
+#	$(Q)$(CC) -o $@ $^ $(LDFLAGS)
+#ifdef CONFIG_WINDOWS
+#	$(Q)cp $@ run/$(BINDIR)
+#else
+#	$(Q)$(call symlink,$@,run/$(BINDIR))
+#endif
+
+#$(o)/%: $(o)/%.o
+#	$(M) "LD $@"
+#	$(Q)$(CC) -o $@ $^ $(LDFLAGS) $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" $(BUILDSYS)/lib-flags $^) $(LIBS)
+#ifdef CONFIG_WINDOWS
+#	$(Q)cp $@ run/$(BINDIR)
+#else
+#	$(Q)$(call symlink,$@,run/$(BINDIR))
+#endif
+
+
+# Rules for public API
+ifdef CONFIG_INSTALL_API
+
+ifdef CONFIG_LOCAL
+# Need an absolute path
+API_ROOT:=$(shell pwd)/run
+API_LIBDIR=$(API_ROOT)/lib
+API_INCDIR=$(API_ROOT)/include
+else
+API_LIBDIR=$(INSTALL_LIB_DIR)
+API_INCDIR=$(INSTALL_INCLUDE_DIR)
+endif
+INSTALL_RUNDIRS+=include lib/pkgconfig
+api: $(API_INCLUDES) $(addprefix run/lib/pkgconfig/,$(addsuffix .pc,$(API_LIBS)))
+
+$(o)/%/.include-stamp:
+	$(Q)$(BUILDSYS)/install-includes $(<D) run/include/$(IDST) $(?F)
+	$(Q)touch $@
+
+run/lib/pkgconfig/%.pc:         # RHS supplied in the sub-makefile
+	$(M)PC-API $@
+	$(Q)sed <$< >$@ "s@^libdir=.*@libdir=$(API_LIBDIR)@;s@^incdir=.*@incdir=$(API_INCDIR)@"
+
+else
+api:
+endif
+
+%.dir-stamp:
+	$(Q)mkdir -p $(@D) && touch $@
+
+FORCE: ;
+
+#$(o)/autoconf.h: $(s)/.config

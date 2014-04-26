@@ -1,0 +1,12 @@
+CFLAGS+=-std=c99 -D_REENTRANT 
+#-arch i386 -arch x86_64
+CFLAGS+=-Isrc/compat/darwin
+CFLAGS+=-I/opt/local/include -I/System/Library/Frameworks/ApplicationServices.framework/Headers
+CFLAGS+=-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.8.sdk/usr/include
+LDFLAGS+=-L/opt/local/lib
+#LDFLAGS+=-L/opt/local/lib -m32 -m64 -arch i386 -arch x86_64
+#LDFLAGS+=-dynamiclib -undefined dynamic_lookup
+LDFLAGS+=-undefined dynamic_lookup
+LDFLAGS+=-L/opt/local/lib 
+#-m64 -arch x86_64
+LDFLAGS+=-framework ApplicationServices -framework Foundation -framework Cocoa

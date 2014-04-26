@@ -1,0 +1,229 @@
+include $(s)/build/gmsl
+-include $(s)/.config
+
+ifeq (${CONFIG_LINUX},1)
+include $(s)/build/scripts/linux
+endif
+
+ifeq (${CONFIG_HPUX},1)
+include $(s)/build/scripts/hpux
+endif
+
+ifeq (${CONFIG_WINDOWS},1)
+include $(s)/build/scripts/windows
+endif
+
+ifeq (${CONFIG_DARWIN},1)
+include $(s)/build/scripts/darwin
+endif
+
+include $(s)/build/scripts/apache2
+include $(s)/build/scripts/pkg-config-check
+
+VERSION_REG := "\([0-9]\{1,3\}\.[0-9]\{1,3\}\)\|\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)"
+
+define arch-ia64
+	$(call config-set,CPU_CHAR_BITS,8)
+	$(call config-set,CPU_BITS_SIZE,64)
+	$(call config-set,CPU_STRUCT_ALIGN,8)
+	$(call config-set,CPU_ALLOW_UNALIGNED,1)
+	$(call config-set,CPU_LITTLE_ENDIAN,1)
+endef
+
+define arch-x86-64
+	$(call config-set,CPU_CHAR_BITS,8)
+	$(call config-set,CPU_BITS_SIZE,64)
+	$(call config-set,CPU_STRUCT_ALIGN,8)
+	$(call config-set,CPU_ALLOW_UNALIGNED,1)
+	$(call config-set,CPU_LITTLE_ENDIAN,1)
+endef
+
+define arch-i386
+	$(call config-set,CPU_CHAR_BITS,8)
+	$(call config-set,CPU_BITS_SIZE,32)
+	$(call config-set,CPU_STRUCT_ALIGN,4)
+	$(call config-set,CPU_ALLOW_UNALIGNED,1)
+	$(call config-set,CPU_LITTLE_ENDIAN,1)
+	$(call config-set,CPU_ARCH,x86)
+endef
+
+define arch-i586
+	$(call config-set,CPU_CHAR_BITS,8)
+	$(call config-set,CPU_BITS_SIZE,32)
+	$(call config-set,CPU_STRUCT_ALIGN,4)
+	$(call config-set,CPU_ALLOW_UNALIGNED,1)
+	$(call config-set,CPU_LITTLE_ENDIAN,1)
+	$(call config-set,CPI_ARCH,x86)
+endef
+
+define arch-i686
+	$(call config-set,CPU_CHAR_BITS,8)
+	$(call config-set,CPU_BITS_SIZE,32)
+	$(call config-set,CPU_STRUCT_ALIGN,4)
+	$(call config-set,CPU_ALLOW_UNALIGNED,1)
+	$(call config-set,CPU_LITTLE_ENDIAN,1)
+	$(call config-set,CPU_ARCH,x86)
+endef
+
+define check_poll
+        @$(eval CONFIG_HAVE_POLL=$(shell $(s)/build/scripts/poll.sh cc))
+        @$(if $(CONFIG_HAVE_POLL), $(call config-set, CONFIG_HAVE_POLL, 1))
+        @$(if $(CONFIG_HAVE_POLL), echo Yes, echo No)
+endef
+
+define check_ppoll
+        @$(eval CONFIG_HAVE_PPOLL=$(shell $(s)/build/scripts/ppoll.sh cc))
+        @$(if $(CONFIG_HAVE_PPOLL), $(call config-set, CONFIG_HAVE_PPOLL, 1))
+        @$(if $(CONFIG_HAVE_PPOLL), echo Yes, echo No)
+endef
+
+define check_epoll
+	@$(eval CONFIG_HAVE_EPOLL=$(shell $(s)/build/scripts/epoll.sh cc))
+	@$(if $(CONFIG_HAVE_EPOLL), $(call config-set, CONFIG_HAVE_EPOLL, 1))
+	@$(if $(CONFIG_HAVE_EPOLL), echo Yes, echo No)
+endef	
+
+define config-define
+	$(if $2,$(eval CONFIG_$1=$2),)
+	$(eval CONFIG_DEFINES+=CONFIG_$1)
+endef
+
+define config-set
+	$(if $2,$(eval $1=$2),)
+	$(eval CONFIG_DEFINES+=$1)
+endef
+
+define package-add
+	$(eval CONFIG_HAVE_$1=1)
+	$(eval CONFIG_HAVE_$1_VERSION=$2)
+	$(eval CONFIG_HAVE_$1_VERSION_STRING=$4)
+	$(eval CONFIG_DEFINES+=CONFIG_HAVE_$1)
+	$(eval CONFIG_DEFINES+=CONFIG_HAVE_$1_VERSION)
+	$(eval CONFIG_DEFINES+=CONFIG_HAVE_$1_VERSION_STRING)
+	@echo " Yes: version $($1_VER)"
+endef
+
+define package-miss
+	@$(if $($1_VER),echo " version ($($1_VER)) is too old (need >= $3)", echo " No")
+endef
+
+define require
+	@echo -n Checking for $1
+	@for i in `seq 1 $(call subtract,21,$(call strlen,$1))`; do printf " "; done
+	@printf ...
+	@$(eval PKG=$(call uc, $(subst -,_,$1)))
+	@$(eval $(PKG)_VER=$(shell $1 $2 2>&1 | grep -m1 -i $(VERSION_REG) -o))
+	@$(eval $(PKG)_VERINT=$(shell $(s)/build/scripts/versionint.sh $($(PKG)_VER)))
+	@$(eval $(PKG)_REQINT=$(shell $(s)/build/scripts/versionint.sh $4))
+	@$(if $(call $3,$($(PKG)_VERINT),$($(PKG)_REQINT)),\
+	      $(call package-add,$(PKG),$($(PKG)_VERINT),$4, $($(PKG)_VER)),\
+	      $(call package-miss,$(PKG),$($(PKG)_VERINT),$4))
+endef
+
+config: distclean runtree configure $(o)/config.mk
+$(o)/config.mk: $(o)/autoconf.h
+	@printf "Generating $@ ... "
+	$(Q)rm -f $@
+	@$(foreach c,$(CONFIG_DEFINES), echo "$(c)=$($(c))" >> $@;)
+	@cp $(o)/config.mk $(s)/.config
+	@echo " done"
+	@echo 
+	@echo "Configured to .config file, run 'make' to build everything."
+
+$(o)/autoconf.h:
+	@$(if $(CONFIG_DEFINES),,$(error You need to run configure first. Use make config) )
+	$(Q)echo 
+	$(Q)echo Preparing for compilation from current directory to $(o)/ ... done
+	@echo -n Generating $@ ... 
+	$(Q)rm -f $@
+	@$(foreach c,$(CONFIG_DEFINES),echo "#define $(c) $($(c))" >> $@;)
+	@echo " done"
+
+configure:
+	@printf "\n"
+	@printf "Determining installation prefix   ... local build\n"
+	@printf "Checking for package version      ... "
+	@$(eval PACKAGE_VERSION_STRING=$(shell cat VERSION))
+	@$(if $(PACKAGE_VERSION_STRING),echo "$(PACKAGE_VERSION_STRING)",echo "no")
+	@$(eval PACKAGE_VERSION=$(shell $(s)/build/scripts/versionint.sh $(PACKAGE_VERSION_STRING)))
+	$(call config-set, PACKAGE_VERSION_STRING)
+	$(call config-set, PACKAGE_VERSION)
+
+	@printf "Checking on which OS we run       ..." 
+	$(eval UNAME_S = $(shell uname -s))
+	$(eval HOST_OS = $(if $(findstring Darwin, $(UNAME_S)), DARWIN, \
+	                 $(if $(findstring Linux,  $(UNAME_S)), LINUX,  \
+	                 $(if $(findstring HP,  $(UNAME_S)), HPUX, \
+			 $(if $(findstring mingw32,  $(UNAME_S)), WINDOWS,\
+	                 $(if $(findstring MINGW,  $(UNAME_S)), WINDOWS,\
+	                 $(if $(findstring CYGWIN, $(UNAME_S)), WINDOWS,-1)))))))
+	@echo " $(HOST_OS)"
+
+ifdef TARGET
+	@printf "Checking on which OS we build     ..."
+
+	$(eval TARGET_OS = $(if $(findstring Darwin, $(TARGET)), DARWIN, \
+	$(if $(findstring Linux,  $(TARGET)), LINUX,  \
+	$(if $(findstring HP,  $(TARGET)), HPUX, \
+	$(if $(findstring mingw,  $(TARGET)), WINDOWS,\
+	$(if $(findstring CYGWIN, $(TARGET)), WINDOWS,-1))))))
+	@echo " $(TARGET_OS)"
+
+	$(eval CPU_ARCH = $(ARCH))
+	$(call config-set,CPU_ARCH)
+	$(call arch-$(subst _,-,$(CPU_ARCH)))
+#	@echo "Checking for machine architekture ... $(CPU_ARCH)"
+
+	$(call config-define,$(TARGET_OS),1)
+else
+	$(call config-define,$(HOST_OS),1)
+endif
+	$(eval CPU_ARCH = $(shell $(CC) -dumpmachine))
+	$(eval CPU_ARCH = $(firstword $(subst -, ,$(CPU_ARCH))))
+#	@echo "Checking for default architekture ... $(CPU_ARCH)"
+	$(call config-set,CPU_ARCH)
+	$(call arch-$(subst _,-,$(CPU_ARCH)))
+	@echo "Checking for machine architekture ... $(CPU_ARCH)"
+
+	@printf "Checking for target we build for  ... "
+	@$(eval TARGET=$(shell $(CC) -dumpmachine))
+	@$(if $(TARGET),echo $(TARGET),echo )
+
+	$(eval CPU_PAGE_SIZE = $(if $(CONFIG_LINUX),  $(shell getconf PAGE_SIZE),     \
+	                       $(if $(CONFIG_DARWIN), $(shell sysctl -n hw.pagesize), \
+	                       4096)))
+	@echo ''
+	@echo "Determining CPU_PAGE_SIZE         ... $(CPU_PAGE_SIZE)"
+	$(if $CPU_PAGE_SIZE,, $(error Set CPU_PAGE_SIZE manually))
+	@echo "Determining CPU_BITS_SIZE         ... $(CPU_BITS_SIZE)"
+	$(call config-set,CPU_PAGE_SIZE)
+	@echo "Determining CPU_CHAR_BITS         ... $(CPU_CHAR_BITS)"
+	@echo "Determining CPU_STRUCT_ALIGN      ... $(CPU_STRUCT_ALIGN)"
+	@echo "Determining CPU_ALLOW_UNALIGNED   ... $(CPU_ALLOW_UNALIGNED)"
+
+	@echo ''
+	$(eval CONFIG_CC = $(shell cc -v 2>&1)) 
+	$(eval CONFIG_HAVE_CC = $(if $(findstring gcc,   $(CONFIG_CC)), gcc, \
+                                $(if $(findstring clang, $(CONFIG_CC)), clang,  \
+                                $(if $(findstring mingw, $(CONFIG_CC)), gcc, none))))
+	@echo "Checking for C compiler           ... $(CONFIG_HAVE_CC)"
+	$(eval CONFIG_DEFINES+=CONFIG_HAVE_CC)
+
+
+	@printf "\n"
+
+ifeq (${CONFIG_PKGCONFIG},1)
+	$(call require,pkg-config,--version,gte,0.21)
+
+	@printf "\n"
+
+	$(call pkg-config-package,gtk+-3.0)
+	$(call pkg-config-package,libpng)
+	$(call pkg-config-package,libqrencode)
+	$(call pkg-config-package,libaa)
+
+	@printf "\n"
+
+endif
+
+.PHONY: config configure

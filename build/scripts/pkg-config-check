@@ -1,0 +1,17 @@
+define pkg-config-package
+	@echo -n Checking package for $1
+	@for i in `seq 1 $(call subtract,13,$(call strlen,$1))`; do printf " "; done
+	@printf "... "
+	@$(eval PKG=$(call uc, $(subst -,_,$1)))
+	@$(eval PKG=$(call uc, $(subst .,_,$(PKG))))
+	@$(eval PKG=$(call uc, $(subst +,_,$(PKG))))
+        @$(eval CONFIG_HAVE_$(PKG)_VERSION=$(shell pkg-config --modversion $1 2>/dev/null))
+	@$(eval CONFIG_HAVE_$(PKG)_VERSION=$(subst -,_,$(CONFIG_HAVE_$(PKG)_VERSION)))
+        @$(if $(CONFIG_HAVE_$(PKG)_VERSION), $(call config-set, CONFIG_HAVE_$(PKG), 1))
+	@$(if $(CONFIG_HAVE_$(PKG)_VERSION), $(call config-set, CONFIG_HAVE_$(PKG)_VERSION, $(CONFIG_HAVE_$(PKG)_VERSION)))
+        @$(if $(CONFIG_HAVE_$(PKG)_VERSION), echo Yes: version $(CONFIG_HAVE_$(PKG)_VERSION), echo No)
+	@$(if $(CONFIG_HAVE_$(PKG)_VERSION), $(eval CONFIG_HAVE_$(PKG)_CFLAGS=$(shell pkg-config --cflags $1 2>/dev/null)))
+	@$(if $(CONFIG_HAVE_$(PKG)_CFLAGS), $(call config-set, CONFIG_HAVE_$(PKG)_CFLAGS, $(CONFIG_HAVE_$(PKG)_CFLAGS)))
+	@$(if $(CONFIG_HAVE_$(PKG)_VERSION), $(eval CONFIG_HAVE_$(PKG)_LDFLAGS=$(shell pkg-config --libs $1 2>/dev/null)))
+	@$(if $(CONFIG_HAVE_$(PKG)_LDFLAGS), $(call config-set, CONFIG_HAVE_$(PKG)_LDFLAGS, $(CONFIG_HAVE_$(PKG)_LDFLAGS)))
+endef

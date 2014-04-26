@@ -1,0 +1,17 @@
+help:
+	@echo   'Configure targets:'
+	@echo   '	config       - Configure package for host system'
+	@echo   ''
+	@echo   'Cleaning targets:'
+	@echo   '	clean        - Remove most generated files'
+	@echo   '	distclean    - Remove all generated files + config + editor backup + patch files'
+	@echo   ''
+	@echo   'Build targets:'
+	@echo   '	all          - Build all targets'
+	@echo   '	install      - Install'
+	@echo   '	test         - Run tests'
+	@echo
+	@echo   'Build options:'
+	@echo   '	make V=0|1 [targets] 0 => quiet build (default), 1 => verbose build'
+	@echo   '	make V=2   [targets] 2 => give reason for rebuild of target'
+	@echo   '	make ASM=1 [targets] 0 => generate asm files'

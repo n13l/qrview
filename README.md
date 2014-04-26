@@ -1,4 +1,4 @@
-qrview
-======
+qrgui
+=====
 
-Simple QRView utility
+QRCODE GUI
