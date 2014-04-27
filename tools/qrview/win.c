@@ -14,6 +14,7 @@ GtkStatusIcon *status;
 gboolean supports_alpha = FALSE;
 static cairo_surface_t *cimage = NULL;
 static uint8_t window_size;
+static int bar_size;
 
 unsigned int alpha = 0;
 static enum state {
@@ -88,24 +89,32 @@ on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 		cairo_set_source_rgba (ctx, 0.0, 0.0, 0.0, d);
 	else
 		cairo_set_source_rgb (ctx, 0.0, 0.0, 0.0);
+
+	cairo_save(ctx);
 	cairo_rectangle(ctx, 30, 30, width - 60 , height - 60);
 	cairo_set_line_width(ctx, 30);
 	cairo_set_line_join(ctx, CAIRO_LINE_JOIN_ROUND); 
-	cairo_stroke(ctx); 
+	cairo_stroke(ctx);
+	cairo_restore(ctx);	
 
 	if (supports_alpha)
 		cairo_set_source_rgba (ctx, 1.0, 1.0, 1.0, d);
 	else
 		cairo_set_source_rgb (ctx, 1.0, 1.0, 1.0);
 
-	/* draw the background */
-	//cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
-        cairo_set_source_surface(ctx, cimage, 40, 40);
+	double scale = (double)(width - 140) / (double)bar_size;
+
+	cairo_save(ctx);
+	cairo_translate (ctx, 60, 60);
+	cairo_scale (ctx, scale, scale);
+        cairo_set_source_surface(ctx, cimage, 0, 0);
 
 	if (supports_alpha)
 		cairo_paint_with_alpha (ctx, d);
 	else		               
 		cairo_paint(ctx);
+
+	cairo_restore(ctx);
 	return FALSE;
 }
 
@@ -123,7 +132,8 @@ window_set_size(GtkWidget *win, int width)
 	int w, h;
 	get_screen_size(win, &w, &h);
 
-	int size = width + 100;
+	//int size = width + 100;
+	int size = w / 3;
 	gtk_widget_set_size_request(GTK_WIDGET(win), size, size);
 }
 
@@ -233,7 +243,9 @@ main_window(int argc, char *argv[], struct surface *surface)
 	}
 	GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
-	window_set_size(win, surface->width * 10);
+	bar_size = surface->width * 10;
+
+	window_set_size(win, bar_size);
 	window_setup(win);
 
 	cimage = qrcode_cairo_surface(surface, 0, 10);
