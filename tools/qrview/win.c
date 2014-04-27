@@ -2,10 +2,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
 
 #include "private.h"
+
+GtkStatusIcon *status;
 
 gboolean supports_alpha = FALSE;
 static cairo_surface_t *cimage = NULL;
@@ -46,8 +50,6 @@ update(gpointer data)
 
 	break;
 	}
-
-	printf("%d %d %d\n", state, alpha, rest);
 
 	gtk_widget_queue_draw(widget);
 
@@ -188,10 +190,39 @@ qrcode_cairo_surface(struct surface *surface, int margin, int size)
 	return cimage;
 }
 
+static
+gboolean
+on_second_click(GtkStatusIcon *i, GdkEvent *e, gpointer ur)
+{
+	if (e->type != GDK_BUTTON_PRESS || ((GdkEventButton *)e)->button != 1)
+		return FALSE;
+
+	return TRUE;
+}
+
 int
 main_window(int argc, char *argv[], struct surface *surface)
 {
 	gtk_init (&argc, &argv);
+
+
+	//const GdkPixdata icon_data = gtk_image_new_from_pixbuf(gdk_pixbuf_from_pixdata(&icon, FALSE, NULL));
+	GdkPixbuf *icon_pix = gdk_pixbuf_from_pixdata((const GdkPixdata *)&icon, FALSE, NULL);
+	//GtkImage *image = gtk_image_new_from_pixbuf(icon_pix, FALSE, NULL);
+
+	status = gtk_status_icon_new();
+	printf("status: %p\n", status);
+
+	//g_signal_connect(t, "popup-menu", G_CALLBACK(tray_icon_on_click), tray);
+	//g_signal_connect(status, "button-press-event", G_CALLBACK(on_second_click), NULL);
+
+	char *tip  = "LGPL QRView (c) 2014 Daniel Kubec <niel@rtfm.cz>";
+
+	gtk_status_icon_set_from_pixbuf(status, icon_pix);
+	gtk_status_icon_set_tooltip_text(status,tip);
+	gtk_status_icon_set_visible(status, TRUE);
+
+	gboolean emb = gtk_status_icon_is_embedded(status);
 
 	GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 

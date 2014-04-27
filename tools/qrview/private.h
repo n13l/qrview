@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixdata.h>
 
 #include "autoconf.h"
 
@@ -28,4 +29,6 @@ gdi_on_draw(GtkWidget *w, cairo_t *ctx, gpointer p);
 #endif
 
 extern unsigned int alpha;
+
+extern const GdkPixdata icon;
 #endif

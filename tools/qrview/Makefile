@@ -1,7 +1,7 @@
 DIRS+=tools/qrview
 qrview=$(o)/tools/qrview/qrview
 
-qrview_OBJECTS=$(addprefix $(o)/tools/qrview/, qrview win asc)
+qrview_OBJECTS=$(addprefix $(o)/tools/qrview/, qrview win asc icon)
 ifdef CONFIG_WINDOWS
 qrview_OBJECTS+=$(addprefix $(o)/tools/qrview/, gdi)
 endif
@@ -20,6 +20,7 @@ $(qrview): $(addsuffix .o, $(qrview_OBJECTS))
 $(qrview): LIBS+=$(qrview_LDFLAGS)
 
 $(o)/tools/qrview/qrview.o: CFLAGS+=$(qrview_CFLAGS)
+$(o)/tools/qrview/icon.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/win.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/enc.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/gdi.o: CFLAGS+=$(qrview_CFLAGS)
