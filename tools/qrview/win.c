@@ -63,7 +63,7 @@ screen_changed(GtkWidget *widget, GdkScreen *old_screen, gpointer userdata)
 	GdkVisual *visual = gdk_screen_get_rgba_visual (screen);
 
 	if (!visual) {
-		fprintf(stderr, "Your screen does not support alpha channels!\n");
+		/* fprintf(stderr, "Your screen does not support alpha channels!\n");*/
 		supports_alpha = FALSE;
 	} else {
 		gtk_widget_set_visual (GTK_WIDGET (widget), visual);
