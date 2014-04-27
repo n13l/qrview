@@ -92,7 +92,8 @@ void gdi_init(GtkWidget *w);
 gboolean 
 gdi_on_draw(GtkWidget *w, cairo_t *ctx, gpointer p);
 #endif
-
+void
+win32_io_init(void);
 extern unsigned int alpha;
 
 extern const GdkPixdata icon;

@@ -14,17 +14,24 @@
 #include "private.h"
 
 const char *uri;
+uint32_t qr_size = 10;
+uint8_t fade = 1;
 
 enum opt_long_e {
-	OPT_HELP         = 'h',
-	OPT_VERSION      = 'V',
+	OPT_HELP    = 'h',
+	OPT_VERSION = 'V',
+	OPT_QR_SIZE = 's',
+	OPT_FADE    = 'F',
 };
 
 static int opt;
-static const char *opt_cmd = "hv";
+static const char *opt_cmd = "hVs:F:";
 static struct option opt_long[] = {
-	{"help"         ,0, 0, OPT_HELP        },
-	{"version"      ,0, 0, OPT_VERSION     },
+	{"help"         ,0, 0, OPT_HELP    },
+	{"version"      ,0, 0, OPT_VERSION },
+	{"qr-size"      ,1, 0, OPT_QR_SIZE },
+	{"fade"         ,1, 0, OPT_FADE    },
+	{NULL, 0, 0, 0}
 };
 
 struct app {
@@ -42,8 +49,9 @@ void
 usage(int code)
 {
 	printf("Usage: qrview <commands-and-parameters> <uri>\n\n");
-
-	printf("\t--version,      -V\t package version\n");
+	printf("\t--help,            -h\t help\n");
+	printf("\t--version,         -V\t package version\n");
+	printf("\t--qr-size=[pixels] -s\t qrcode module size in pixels (default: 10)\n");
 	printf("\n");
 
 	exit(EXIT_SUCCESS);
@@ -82,7 +90,9 @@ giveup(const char *fmt, ...)
 int
 main(int argc, char *argv[]) 
 {
-	const char *uri = argv[1];
+#ifdef CONFIG_WINDOWS
+	win32_io_init();
+#endif
 
 	while ((opt = getopt_long(argc, argv, opt_cmd, opt_long, NULL)) >= 0) {
 		switch (opt) {
@@ -94,6 +104,12 @@ main(int argc, char *argv[])
 			version();
 			exit(EXIT_SUCCESS);
 		break;
+		case OPT_QR_SIZE:
+			qr_size = atoi(optarg);
+		break;
+		case OPT_FADE:
+			fade = atoi(optarg);
+		break;
 		default:
 		if (app->num_cmds >= MAX_CMDS)
 			giveup("Too many commands specified");
@@ -103,11 +119,11 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (optind < argc)
+	if (optind + 1 != argc)
 		usage(2);
 
-	if (!app->num_cmds)
-		nothing();
+	if (!(uri = argv[argc - 1]))
+		usage(2);
 
 	QRcode *qr = QRcode_encodeString8bit(uri , QR_MODE_8, QR_ECLEVEL_H);
 	if (qr == NULL)
