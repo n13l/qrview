@@ -39,6 +39,7 @@ update(gpointer data)
 	case STARTING:
 		if (rest > 10) state = RUNNING;
 		alpha += 1;
+		gtk_widget_queue_draw(widget);
 	break;
 	case RUNNING:
 		if (rest > 20) state = STOPPING;
@@ -47,11 +48,10 @@ update(gpointer data)
 		if (rest > 30)
 			gtk_main_quit();
 		alpha -= 1;
+		gtk_widget_queue_draw(widget);
 
 	break;
 	}
-
-	gtk_widget_queue_draw(widget);
 
 	return TRUE;
 }
