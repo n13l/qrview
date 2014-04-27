@@ -21,7 +21,7 @@ update(gpointer data)
 	if (!--count)
 		gtk_main_quit();
 */
-//	gtk_widget_queue_draw(widget);
+	gtk_widget_queue_draw(widget);
 
 	return TRUE;
 }
@@ -38,14 +38,11 @@ screen_changed(GtkWidget *widget, GdkScreen *old_screen, gpointer userdata)
 	} else {
 		gtk_widget_set_visual (GTK_WIDGET (widget), visual);
 		supports_alpha = TRUE;
-		/* Now we have a colormap appropriate for the screen, use it */
-		//gtk_widget_set_visual(widget, visual);
-
 	}
 }
 
-static gboolean 
-draw(GtkWidget *w, cairo_t *ctx, gpointer p)
+gboolean 
+on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 {
 	GdkWindow *gwin = gtk_widget_get_window(w);
 
@@ -97,11 +94,17 @@ window_setup(GtkWidget *w)
 	gtk_window_set_position(GTK_WINDOW(w), GTK_WIN_POS_CENTER);
 
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
-	//gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
-
+#ifdef CONFIG_WINDOWS
+	gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
+#endif
 	g_signal_connect (w, "destroy", G_CALLBACK (gtk_main_quit), NULL);
-	g_signal_connect (w, "draw", G_CALLBACK (draw), NULL);
 	g_signal_connect(w, "screen-changed", G_CALLBACK(screen_changed), NULL);
+
+#ifdef CONFIG_WINDOWS
+	g_signal_connect (w, "draw", G_CALLBACK (gdi_on_draw), NULL);
+#else
+	g_signal_connect (w, "draw", G_CALLBACK (on_draw), NULL);
+#endif
 }
 
 static void
@@ -168,12 +171,14 @@ main_window(int argc, char *argv[], struct surface *surface)
 	window_setup(win);
 
 	cimage = qrcode_cairo_surface(surface, 0, 10);
-
-	g_timeout_add_seconds (1, update, win);
-
 	screen_changed(win, NULL, NULL);
 
 	gtk_widget_show (win);
+
+#ifdef CONFIG_WINDOWS
+	gdi_init(win);
+#endif
+	g_timeout_add_seconds (1, update, win);
 	gtk_widget_queue_draw(win);
 	gtk_main ();
 

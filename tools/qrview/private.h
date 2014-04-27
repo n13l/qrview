@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <gtk/gtk.h>
+
+#include "autoconf.h"
 
 struct surface {
 	uint8_t width;
@@ -14,5 +17,14 @@ struct surface {
 
 int
 main_window(int argc, char *argv[], struct surface *surface);
+
+gboolean
+on_draw(GtkWidget *w, cairo_t *ctx, gpointer p);
+
+#ifdef CONFIG_WINDOWS
+void gdi_init(GtkWidget *w);
+gboolean 
+gdi_on_draw(GtkWidget *w, cairo_t *ctx, gpointer p);
+#endif
 
 #endif

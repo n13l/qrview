@@ -2,6 +2,9 @@ DIRS+=tools/qrview
 qrview=$(o)/tools/qrview/qrview
 
 qrview_OBJECTS=$(addprefix $(o)/tools/qrview/, qrview win asc)
+ifdef CONFIG_WINDOWS
+qrview_OBJECTS+=$(addprefix $(o)/tools/qrview/, gdi)
+endif
 
 qrview_CFLAGS=$(CONFIG_HAVE_GTK__3_0_CFLAGS) \
 	      $(CONFIG_HAVE_LIBQRENCODE_CFLAGS)\
@@ -19,6 +22,7 @@ $(qrview): LIBS+=$(qrview_LDFLAGS)
 $(o)/tools/qrview/qrview.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/win.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/enc.o: CFLAGS+=$(qrview_CFLAGS)
+$(o)/tools/qrview/gdi.o: CFLAGS+=$(qrview_CFLAGS)
 
 PROGS+=$(qrview)
 ASM+=$(addsuffix .s, $(qrview_OBJECTS))

@@ -1,6 +1,6 @@
 CFLAGS+=-std=c99 -I$(s)/src/compat/windows -fgnu89-inline
 LSHARED+=-mms-bitfields 
-LDFLAGS+=-mms-bitfields -L$(s)/build/arch/windows/lib
+LDFLAGS+=-ggdb -mms-bitfields -L$(s)/build/arch/windows/lib
 LIBS+=-lcomdlg32 -lwinspool -lcomctl32 -lsetupapi -lwininet -lwin32spl \
 -lws2_32 -lpsapi -lshlwapi -ladvapi32 -lgdi32 -lpsapi \
  -lole32 -lshlwapi
