@@ -79,21 +79,33 @@ on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 	int width, height;
 	gtk_window_get_size(GTK_WINDOW(w), &width, &height);
 
-	cairo_set_source_rgb (ctx, 0.0, 0.0, 0.0);
+	double d;
+
+	if (supports_alpha)
+		d = ((float)alpha / (float)255);
+
+	if (supports_alpha)
+		cairo_set_source_rgba (ctx, 0.0, 0.0, 0.0, d);
+	else
+		cairo_set_source_rgb (ctx, 0.0, 0.0, 0.0);
 	cairo_rectangle(ctx, 30, 30, width - 60 , height - 60);
 	cairo_set_line_width(ctx, 30);
 	cairo_set_line_join(ctx, CAIRO_LINE_JOIN_ROUND); 
 	cairo_stroke(ctx); 
 
 	if (supports_alpha)
-		cairo_set_source_rgba (ctx, 1.0, 1.0, 1.0, 1); 
+		cairo_set_source_rgba (ctx, 1.0, 1.0, 1.0, d);
 	else
 		cairo_set_source_rgb (ctx, 1.0, 1.0, 1.0);
 
 	/* draw the background */
 	//cairo_set_operator (ctx, CAIRO_OPERATOR_SOURCE);
         cairo_set_source_surface(ctx, cimage, 40, 40);
-	cairo_paint(ctx);
+
+	if (supports_alpha)
+		cairo_paint_with_alpha (ctx, d);
+	else		               
+		cairo_paint(ctx);
 	return FALSE;
 }
 
@@ -205,25 +217,20 @@ main_window(int argc, char *argv[], struct surface *surface)
 {
 	gtk_init (&argc, &argv);
 
-
-	//const GdkPixdata icon_data = gtk_image_new_from_pixbuf(gdk_pixbuf_from_pixdata(&icon, FALSE, NULL));
 	GdkPixbuf *icon_pix = gdk_pixbuf_from_pixdata((const GdkPixdata *)&icon, FALSE, NULL);
-	//GtkImage *image = gtk_image_new_from_pixbuf(icon_pix, FALSE, NULL);
 
 	status = gtk_status_icon_new();
-	printf("status: %p\n", status);
 
 	//g_signal_connect(t, "popup-menu", G_CALLBACK(tray_icon_on_click), tray);
 	//g_signal_connect(status, "button-press-event", G_CALLBACK(on_second_click), NULL);
 
-	char *tip  = "LGPL QRView (c) 2014 Daniel Kubec <niel@rtfm.cz>";
-
-	gtk_status_icon_set_from_pixbuf(status, icon_pix);
-	gtk_status_icon_set_tooltip_text(status,tip);
-	gtk_status_icon_set_visible(status, TRUE);
-
-	gboolean emb = gtk_status_icon_is_embedded(status);
-
+	if (status) {
+		char *tip  = "LGPL QRView (c) 2014 Daniel Kubec <niel@rtfm.cz>";
+		gtk_status_icon_set_from_pixbuf(status, icon_pix);
+		gtk_status_icon_set_tooltip_text(status,tip);
+		gtk_status_icon_set_visible(status, TRUE);
+		gboolean emb = gtk_status_icon_is_embedded(status);
+	}
 	GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
 	window_set_size(win, surface->width * 10);
@@ -239,9 +246,13 @@ main_window(int argc, char *argv[], struct surface *surface)
 	gdi_init(win);
 #endif
 	gtk_widget_show (win);
+	gtk_window_set_keep_above(GTK_WINDOW(win), TRUE);
 	g_timeout_add(ms, update, win);
 	gtk_widget_queue_draw(win);
 	gtk_main ();
+
+	if (status)
+		gtk_status_icon_set_visible(status, FALSE);
 
 	return EXIT_SUCCESS;
 }
