@@ -2,7 +2,7 @@
 #define NTDDI_VERSION           NTDDI_WIN2KSP4
 #endif
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT            0x500
+#define _WIN32_WINNT            0x0500
 #endif
 #ifndef _WIN32_IE_
 #define _WIN32_IE_              _WIN32_IE_WIN2KSP4
@@ -24,6 +24,37 @@
 
 static HBITMAP __bitmap;
 static uint8_t*__bits;
+
+HWND FindMyTopMostWindow()
+{
+	DWORD dwProcID = GetCurrentProcessId();
+	HWND hWnd = GetTopWindow(GetDesktopWindow());
+	while(hWnd) {
+		DWORD dwWndProcID = 0;
+		GetWindowThreadProcessId(hWnd, &dwWndProcID);
+		if(dwWndProcID == dwProcID)
+			return hWnd;            
+		hWnd = GetNextWindow(hWnd, GW_HWNDNEXT);
+	}
+	return NULL;
+}
+
+char *
+GetLastErrorAsString(DWORD error)
+{
+	LPSTR messageBuffer = NULL;
+	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
+	                             FORMAT_MESSAGE_IGNORE_INSERTS,
+	                             NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
+				     (LPSTR)&messageBuffer, 0, NULL);
+
+	char *str = malloc(size + 1);
+	strcpy(str, messageBuffer);
+	str[size] = 0;
+	LocalFree(messageBuffer);
+
+	return str;
+}
 
 void
 gdi_bitmap_init(HDC dc, int w, int h)
@@ -53,14 +84,17 @@ gdi_bitmap_init(HDC dc, int w, int h)
 	}
 
 
-	printf("rgb: %d\n", sizeof(RGBQUAD));
+	int stride = ((((w * 24) + 31) & ~31) >> 3);
 	uint8_t *p = __bits;
 
-	for (int x = 0; x < w * h; x++) {
-		*p++ = 0;
-		*p++ = 0;
-		*p++ = 0xff;
+	for (int y = 0; y < h; y++) {
+		for (int x = 0; x < w; x++) {
+			*p++ = 128;
+			*p++ = 0;
+			*p++ = 0;
+		}
 
+		p += stride - (w * 3);
 	}
 
 }
@@ -71,8 +105,15 @@ gdi_init_layer(GtkWidget *w)
 	GdkWindow *gdk = gtk_widget_get_window(w);
 	HWND hwnd = gdk_win32_window_get_impl_hwnd(gdk);
 
-	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 255), 240, 
+	//hwnd = FindMyTopMostWindow();
+	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+
+	int rc = SetLayeredWindowAttributes(hwnd, RGB(0, 0, 128), alpha, 
 	                           LWA_ALPHA | LWA_COLORKEY);
+	if (rc==0) {
+		rc = GetLastError();
+		printf("hwnd: %p, layerd: %d %s\n", hwnd, rc, GetLastErrorAsString(rc));
+	}
 	ShowWindow(hwnd, SW_SHOW);
 	SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, 
 	             SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
@@ -82,7 +123,6 @@ gdi_init_layer(GtkWidget *w)
 void
 gdi_init(GtkWidget *w)
 {
-	printf("gdi_init\n");
 	GdkWindow *gdk = gtk_widget_get_window(w);
 	HWND hwnd = gdk_win32_window_get_impl_hwnd(gdk);
 
@@ -94,7 +134,7 @@ gdi_init(GtkWidget *w)
 
 	ReleaseDC(hwnd, dc);
 
-	gdi_init_layer(w);
+//	gdi_init_layer(w);
 }
 
 gboolean
@@ -114,22 +154,12 @@ gdi_on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 	cairo_t *cr = cairo_create(surface);
 
 	on_draw(w, cr, p);
-/*
-	cairo_t *c = cr;
-cairo_set_source_rgb (c, 0.0, 0.0, 0.0);
-cairo_rectangle(c, 30, 30, width - 60 , height - 60);
-cairo_set_line_width(c, 30);
-cairo_set_line_join(c, CAIRO_LINE_JOIN_ROUND);
-cairo_stroke(c);
-*/
+
 	cairo_surface_finish(surface);
 
 	RECT rect;
 	GetClientRect(hwnd, &rect);
 	int rc = BitBlt(dc, 0, 0, width, height, dc_new, 0, 0, SRCCOPY);
-
-	printf("hwnd: %p cr: %p, surface: %p, dc: %p, newdc: %p __bitmap: %p rc: %d\n", 
-			hwnd, cr, surface, dc, dc_new, __bitmap, rc);
 
 	SelectObject(dc_new, obj);
 
@@ -138,6 +168,8 @@ cairo_stroke(c);
 
 	cairo_destroy(cr);
 	cairo_surface_destroy(surface);
+
+	gdi_init_layer(w);
 
 	return TRUE;
 }

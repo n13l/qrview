@@ -27,4 +27,5 @@ gboolean
 gdi_on_draw(GtkWidget *w, cairo_t *ctx, gpointer p);
 #endif
 
+extern unsigned int alpha;
 #endif

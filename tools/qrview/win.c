@@ -11,16 +11,44 @@ gboolean supports_alpha = FALSE;
 static cairo_surface_t *cimage = NULL;
 static uint8_t window_size;
 
+unsigned int alpha = 0;
+static enum state {
+	STARTING  = 0,
+	RUNNING   = 1,
+	STOPPING  = 2
+} state;
+
+static time_t start;
+static int ms = 50;
+
 static gboolean
 update(gpointer data)
 {
 	GtkWidget *widget = (GtkWidget *)data;
 
-	static int count = 15;
-	/*
-	if (!--count)
-		gtk_main_quit();
-*/
+	if (!start) start = time(NULL);
+
+	time_t now = time(NULL);
+	time_t rest = now - start;
+
+	switch(state) {
+	case STARTING:
+		if (rest > 10) state = RUNNING;
+		alpha += 1;
+	break;
+	case RUNNING:
+		if (rest > 20) state = STOPPING;
+	break;
+	case STOPPING:
+		if (rest > 30)
+			gtk_main_quit();
+		alpha -= 1;
+
+	break;
+	}
+
+	printf("%d %d %d\n", state, alpha, rest);
+
 	gtk_widget_queue_draw(widget);
 
 	return TRUE;
@@ -174,11 +202,13 @@ main_window(int argc, char *argv[], struct surface *surface)
 	screen_changed(win, NULL, NULL);
 
 	gtk_widget_show (win);
+	gtk_widget_hide (win);
 
 #ifdef CONFIG_WINDOWS
 	gdi_init(win);
 #endif
-	g_timeout_add_seconds (1, update, win);
+	gtk_widget_show (win);
+	g_timeout_add(ms, update, win);
 	gtk_widget_queue_draw(win);
 	gtk_main ();
 
