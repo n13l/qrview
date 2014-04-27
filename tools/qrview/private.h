@@ -5,9 +5,18 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
+
+#include "autoconf.h"
+
 #include <gtk/gtk.h>
 #include <gdk-pixbuf/gdk-pixdata.h>
-#include "autoconf.h"
+
+#ifdef MAC_INTEGRATION
+#include <gtkmacintegration/gtkosxapplication.h>
+#include <gtkmacintegration/gtk-mac-integration.h>
+
+void quartz_init(GtkWidget *win);
+#endif
 
 #define STRINGIZER(arg)     #arg
 #define STR_VALUE(arg)      STRINGIZER(arg)

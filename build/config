@@ -216,11 +216,15 @@ ifeq (${CONFIG_PKGCONFIG},1)
 	$(call require,pkg-config,--version,gte,0.21)
 
 	@printf "\n"
-ifndef CONFIG_WINDOWS
+ifdef CONFIG_LINUX
 	$(call pkg-config-package,gtk+-3.0)
-else
-#$(call pkg-config-package,gtk+-win32-3.0)
+endif
+ifdef CONFIG_WINDOWS
 	$(call pkg-config-package,gtk+-win32-3.0-static)
+endif
+ifdef CONFIG_DARWIN
+#	$(call pkg-config-package,gtk+-quartz-3.0)
+	$(call pkg-config-package,gtk-mac-integration-gtk3)
 endif
 	$(call pkg-config-package,libqrencode)
 	@printf "\n"

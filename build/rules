@@ -22,6 +22,14 @@ $(o)/%.o: %.c $(o)/autoconf.h
 	$(M)CC $<
 	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -c -o $@ $<
 
+$(o)/%.o: %.m $(o)/autoconf.h
+	$(M)CC $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -c -o $@ $<
+
+%.o: %.m $(o)/autoconf.h
+	$(M)CC $<
+	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) -c -o $@ $
+
 $(o)/%.oo: $(s)/%.c $(o)/autoconf.h
 	$(M)SO $<
 	$(Q)DEPENDENCIES_OUTPUT="$(o)/depend.new $@" $(CC) $(CFLAGS) $(CSHARED) -c -o $@ $<

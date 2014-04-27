@@ -80,6 +80,15 @@ on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 	int width, height;
 	gtk_window_get_size(GTK_WINDOW(w), &width, &height);
 
+/*
+	cairo_set_source_rgb (ctx, 0.0, 0.0, 1.0);
+
+        cairo_save(ctx);
+        cairo_rectangle(ctx, 0, 0, width, height );
+        cairo_fill(ctx);
+        cairo_restore(ctx);
+*/
+
 	double d;
 
 	if (supports_alpha)
@@ -146,9 +155,9 @@ window_setup(GtkWidget *w)
 	gtk_window_set_position(GTK_WINDOW(w), GTK_WIN_POS_CENTER);
 
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
-#ifdef CONFIG_WINDOWS
+//#ifdef CONFIG_WINDOWS
 	gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
-#endif
+//#endif
 	g_signal_connect (w, "destroy", G_CALLBACK (gtk_main_quit), NULL);
 	g_signal_connect(w, "screen-changed", G_CALLBACK(screen_changed), NULL);
 
@@ -227,6 +236,10 @@ main_window(int argc, char *argv[], struct surface *surface)
 {
 	gtk_init (&argc, &argv);
 
+#ifdef MAC_INTEGRATION
+        GtkosxApplication *osx = g_object_new(GTKOSX_TYPE_APPLICATION, NULL);
+#endif
+
 	GdkPixbuf *icon_pix = gdk_pixbuf_from_pixdata((const GdkPixdata *)&icon, FALSE, NULL);
 
 	status = gtk_status_icon_new();
@@ -257,6 +270,10 @@ main_window(int argc, char *argv[], struct surface *surface)
 #ifdef CONFIG_WINDOWS
 	gdi_init(win);
 #endif
+#ifdef CONFIG_DARWIN
+	quartz_init(win);
+#endif
+
 	gtk_widget_show (win);
 	gtk_window_set_keep_above(GTK_WINDOW(win), TRUE);
 	g_timeout_add(ms, update, win);
