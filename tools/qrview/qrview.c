@@ -1,5 +1,5 @@
 /*
- * $qrcode.c                                          Daniel Kubec <niel@rtfm.cz>
+ * $qrview.c                                          Daniel Kubec <niel@rtfm.cz>
  *
  * This software may be freely distributed and used according to the terms
  * of the GNU Lesser General Public License.
@@ -14,21 +14,25 @@
 #include "private.h"
 
 const char *uri;
+
 uint32_t qr_size = 10;
-uint8_t fade = 1;
+uint32_t fade = 1;
+uint32_t fade_interval = 10;
 
 enum opt_long_e {
 	OPT_HELP    = 'h',
 	OPT_VERSION = 'V',
+	OPT_TIMEOUT = 't',
 	OPT_QR_SIZE = 's',
 	OPT_FADE    = 'F',
 };
 
 static int opt;
-static const char *opt_cmd = "hVs:F:";
+static const char *opt_cmd = "hVt:s:F:";
 static struct option opt_long[] = {
 	{"help"         ,0, 0, OPT_HELP    },
-	{"version"      ,0, 0, OPT_VERSION },
+	{"timeout"      ,0, 0, OPT_VERSION },
+	{"version"      ,0, 0, OPT_TIMEOUT },
 	{"qr-size"      ,1, 0, OPT_QR_SIZE },
 	{"fade"         ,1, 0, OPT_FADE    },
 	{NULL, 0, 0, 0}
@@ -81,10 +85,12 @@ giveup(const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
+
 	fprintf(stderr, ": ");
 	vfprintf(stderr, fmt, args);
 	fputc('\n', stderr);
-	exit(1);
+
+	exit(EXIT_FAILURE);
 }
 
 int

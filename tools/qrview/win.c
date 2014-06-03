@@ -57,6 +57,16 @@ update(gpointer data)
 	return TRUE;
 }
 
+static gboolean                                                                 
+press_event(GtkWidget *w, GdkEventButton *e)                             
+{
+	if (e->button != 1)
+		return TRUE;
+
+	gtk_main_quit();
+	return TRUE;
+}
+
 static void 
 screen_changed(GtkWidget *widget, GdkScreen *old_screen, gpointer userdata)
 {
@@ -64,7 +74,6 @@ screen_changed(GtkWidget *widget, GdkScreen *old_screen, gpointer userdata)
 	GdkVisual *visual = gdk_screen_get_rgba_visual (screen);
 
 	if (!visual) {
-		/* fprintf(stderr, "Your screen does not support alpha channels!\n");*/
 		supports_alpha = FALSE;
 	} else {
 		gtk_widget_set_visual (GTK_WIDGET (widget), visual);
@@ -79,15 +88,6 @@ on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 
 	int width, height;
 	gtk_window_get_size(GTK_WINDOW(w), &width, &height);
-
-/*
-	cairo_set_source_rgb (ctx, 0.0, 0.0, 1.0);
-
-        cairo_save(ctx);
-        cairo_rectangle(ctx, 0, 0, width, height );
-        cairo_fill(ctx);
-        cairo_restore(ctx);
-*/
 
 	double d;
 
@@ -141,7 +141,6 @@ window_set_size(GtkWidget *win, int width)
 	int w, h;
 	get_screen_size(win, &w, &h);
 
-	//int size = width + 100;
 	int size = w / 3;
 	gtk_widget_set_size_request(GTK_WIDGET(win), size, size);
 }
@@ -155,17 +154,22 @@ window_setup(GtkWidget *w)
 	gtk_window_set_position(GTK_WINDOW(w), GTK_WIN_POS_CENTER);
 
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
-//#ifdef CONFIG_WINDOWS
+#ifndef CONFIG_LINUX
 	gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
-//#endif
-	g_signal_connect (w, "destroy", G_CALLBACK (gtk_main_quit), NULL);
+#endif
+	g_signal_connect(w, "button_press_event", G_CALLBACK (press_event), NULL);
+	g_signal_connect(w, "destroy", G_CALLBACK (gtk_main_quit), NULL);
 	g_signal_connect(w, "screen-changed", G_CALLBACK(screen_changed), NULL);
 
 #ifdef CONFIG_WINDOWS
-	g_signal_connect (w, "draw", G_CALLBACK (gdi_on_draw), NULL);
+	g_signal_connect(w, "draw", G_CALLBACK (gdi_on_draw), NULL);
 #else
-	g_signal_connect (w, "draw", G_CALLBACK (on_draw), NULL);
+	g_signal_connect(w, "draw", G_CALLBACK (on_draw), NULL);
 #endif
+
+        gtk_widget_set_events(w, GDK_EXPOSURE_MASK |                       
+	                      GDK_LEAVE_NOTIFY_MASK | GDK_BUTTON_PRESS_MASK |   
+	                      GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK);
 }
 
 static void
@@ -243,9 +247,6 @@ main_window(int argc, char *argv[], struct surface *surface)
 	GdkPixbuf *icon_pix = gdk_pixbuf_from_pixdata((const GdkPixdata *)&icon, FALSE, NULL);
 
 	status = gtk_status_icon_new();
-
-	//g_signal_connect(t, "popup-menu", G_CALLBACK(tray_icon_on_click), tray);
-	//g_signal_connect(status, "button-press-event", G_CALLBACK(on_second_click), NULL);
 
 	if (status) {
 		char *tip  = "LGPL QRView (c) 2014 Daniel Kubec <niel@rtfm.cz>";

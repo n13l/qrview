@@ -65,22 +65,8 @@ win32_io_init(void)
 	setvbuf( stderr, NULL, _IONBF, 0 );
 }
 
-HWND FindMyTopMostWindow()
-{
-	DWORD dwProcID = GetCurrentProcessId();
-	HWND hWnd = GetTopWindow(GetDesktopWindow());
-	while(hWnd) {
-		DWORD dwWndProcID = 0;
-		GetWindowThreadProcessId(hWnd, &dwWndProcID);
-		if(dwWndProcID == dwProcID)
-			return hWnd;            
-		hWnd = GetNextWindow(hWnd, GW_HWNDNEXT);
-	}
-	return NULL;
-}
-
 char *
-GetLastErrorAsString(DWORD error)
+win32_error_string(DWORD error)
 {
 	LPSTR messageBuffer = NULL;
 	size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
@@ -145,15 +131,10 @@ gdi_init_layer(GtkWidget *w)
 	GdkWindow *gdk = gtk_widget_get_window(w);
 	HWND hwnd = gdk_win32_window_get_impl_hwnd(gdk);
 
-	//hwnd = FindMyTopMostWindow();
 	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
 
-	int rc = SetLayeredWindowAttributes(hwnd, RGB(0, 0, 128), alpha, 
+	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 128), alpha, 
 	                           LWA_ALPHA | LWA_COLORKEY);
-	if (rc==0) {
-		rc = GetLastError();
-		printf("hwnd: %p, layerd: %d %s\n", hwnd, rc, GetLastErrorAsString(rc));
-	}
 	ShowWindow(hwnd, SW_SHOW);
 	SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, 
 	             SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
