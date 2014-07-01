@@ -131,7 +131,7 @@ gdi_init_layer(GtkWidget *w)
 	GdkWindow *gdk = gtk_widget_get_window(w);
 	HWND hwnd = gdk_win32_window_get_impl_hwnd(gdk);
 
-	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
+	SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED |  WS_EX_TOOLWINDOW);
 
 	SetLayeredWindowAttributes(hwnd, RGB(0, 0, 128), alpha, 
 	                           LWA_ALPHA | LWA_COLORKEY);

@@ -19,23 +19,24 @@ uint32_t qr_size = 10;
 uint32_t fade = 1;
 uint32_t fade_interval = 10;
 int timeout = 0;
+int alpha_max = 255;
 
 enum opt_long_e {
 	OPT_HELP    = 'h',
 	OPT_VERSION = 'V',
 	OPT_TIMEOUT = 't',
 	OPT_QR_SIZE = 's',
-	OPT_FADE    = 'F',
+	OPT_ALPHA   = 'a',
 };
 
 static int opt;
-static const char *opt_cmd = "hVt:s:F:";
+static const char *opt_cmd = "hVt:s:a:";
 static struct option opt_long[] = {
-	{"help"         ,0, 0, OPT_HELP    },
-	{"timeout"      ,0, 0, OPT_TIMEOUT },
-	{"version"      ,0, 0, OPT_VERSION },
-	{"qr-size"      ,1, 0, OPT_QR_SIZE },
-	{"fade"         ,1, 0, OPT_FADE    },
+	{"help"    ,0, 0, OPT_HELP    },
+	{"timeout" ,0, 0, OPT_TIMEOUT },
+	{"version" ,0, 0, OPT_VERSION },
+	{"qr-size" ,1, 0, OPT_QR_SIZE },
+	{"alpha"   ,1, 0, OPT_ALPHA   },
 	{NULL, 0, 0, 0}
 };
 
@@ -118,8 +119,12 @@ main(int argc, char *argv[])
 		case OPT_TIMEOUT:
 			timeout = atoi(optarg);
 			break;
-		case OPT_FADE:
-			fade = atoi(optarg);
+		case OPT_ALPHA:
+			alpha_max = atoi(optarg);
+			if (alpha_max > 255)
+				alpha_max = 255;
+			if (alpha_max < 0)
+				alpha_max = 0;
 		break;
 		default:
 		if (app->num_cmds >= MAX_CMDS)
