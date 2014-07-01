@@ -9,6 +9,7 @@
 
 #include "private.h"
 
+GtkWidget *win;
 GtkStatusIcon *status;
 
 gboolean supports_alpha = FALSE;
@@ -24,7 +25,7 @@ static enum state {
 } state;
 
 static time_t start;
-static int ms = 50;
+static int ms = 1000;
 
 static gboolean
 update(gpointer data)
@@ -36,22 +37,9 @@ update(gpointer data)
 	time_t now = time(NULL);
 	time_t rest = now - start;
 
-	switch(state) {
-	case STARTING:
-		if (rest > 10) state = RUNNING;
-		alpha += 1;
-		gtk_widget_queue_draw(widget);
-	break;
-	case RUNNING:
-		if (rest > 20) state = STOPPING;
-	break;
-	case STOPPING:
-		if (rest > 30)
-			gtk_main_quit();
-		alpha -= 1;
-		gtk_widget_queue_draw(widget);
-
-	break;
+	if (rest > timeout && state != STOPPING) {
+		state = STOPPING;
+		gtk_widget_queue_draw(win);
 	}
 
 	return TRUE;
@@ -124,6 +112,29 @@ on_draw(GtkWidget *w, cairo_t *ctx, gpointer p)
 		cairo_paint(ctx);
 
 	cairo_restore(ctx);
+
+	switch (state) {
+	case STARTING:
+		if (alpha >= 253)
+			state = RUNNING;
+		alpha += 2;
+		if (alpha > 255)
+			alpha = 255;
+		
+		gtk_widget_queue_draw(win);
+		break;
+	case RUNNING:
+		break;
+	case STOPPING:
+		if (alpha < 3)
+			gtk_main_quit();
+		alpha -= 2;
+		if (alpha < 0)
+			alpha = 0;
+		gtk_widget_queue_draw(win);
+		break;
+	}
+
 	return FALSE;
 }
 
@@ -157,6 +168,7 @@ window_setup(GtkWidget *w)
 #ifndef CONFIG_LINUX
 	gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
 #endif
+	//g_signal_connect(w, "show", G_CALLBACK (realize), NULL);
 	g_signal_connect(w, "button_press_event", G_CALLBACK (press_event), NULL);
 	g_signal_connect(w, "destroy", G_CALLBACK (gtk_main_quit), NULL);
 	g_signal_connect(w, "screen-changed", G_CALLBACK(screen_changed), NULL);
@@ -255,7 +267,8 @@ main_window(int argc, char *argv[], struct surface *surface)
 		gtk_status_icon_set_visible(status, TRUE);
 		gboolean emb = gtk_status_icon_is_embedded(status);
 	}
-	GtkWidget *win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+
+	win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
 	bar_size = (surface->width * 10) + 20;
 
@@ -274,11 +287,13 @@ main_window(int argc, char *argv[], struct surface *surface)
 #ifdef CONFIG_DARWIN
 	quartz_init(win);
 #endif
-
 	gtk_widget_show (win);
 	gtk_window_set_keep_above(GTK_WINDOW(win), TRUE);
-	g_timeout_add(ms, update, win);
+
+	if (timeout)
+		g_timeout_add(ms, update, win);
 	gtk_widget_queue_draw(win);
+
 	gtk_main ();
 
 	if (status)

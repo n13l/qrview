@@ -105,5 +105,7 @@ void
 win32_io_init(void);
 extern unsigned int alpha;
 
+extern int timeout;
+
 extern const GdkPixdata icon;
 #endif

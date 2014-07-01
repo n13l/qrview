@@ -18,6 +18,7 @@ const char *uri;
 uint32_t qr_size = 10;
 uint32_t fade = 1;
 uint32_t fade_interval = 10;
+int timeout = 0;
 
 enum opt_long_e {
 	OPT_HELP    = 'h',
@@ -31,8 +32,8 @@ static int opt;
 static const char *opt_cmd = "hVt:s:F:";
 static struct option opt_long[] = {
 	{"help"         ,0, 0, OPT_HELP    },
-	{"timeout"      ,0, 0, OPT_VERSION },
-	{"version"      ,0, 0, OPT_TIMEOUT },
+	{"timeout"      ,0, 0, OPT_TIMEOUT },
+	{"version"      ,0, 0, OPT_VERSION },
 	{"qr-size"      ,1, 0, OPT_QR_SIZE },
 	{"fade"         ,1, 0, OPT_FADE    },
 	{NULL, 0, 0, 0}
@@ -55,6 +56,7 @@ usage(int code)
 	printf("Usage: qrview <commands-and-parameters> <uri>\n\n");
 	printf("\t--help,            -h\t help\n");
 	printf("\t--version,         -V\t package version\n");
+	printf("\t--timeout,         -t\t exit after number of seconds\n");
 	printf("\t--qr-size=[pixels] -s\t qrcode module size in pixels (default: 10)\n");
 	printf("\n");
 
@@ -113,6 +115,9 @@ main(int argc, char *argv[])
 		case OPT_QR_SIZE:
 			qr_size = atoi(optarg);
 		break;
+		case OPT_TIMEOUT:
+			timeout = atoi(optarg);
+			break;
 		case OPT_FADE:
 			fade = atoi(optarg);
 		break;
