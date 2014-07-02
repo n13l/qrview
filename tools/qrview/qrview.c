@@ -58,6 +58,7 @@ usage(int code)
 	printf("\t--help,            -h\t help\n");
 	printf("\t--version,         -V\t package version\n");
 	printf("\t--timeout,         -t\t exit after number of seconds\n");
+	printf("\t--alpha,           -a\t final alpha channel value [0-255]\n");
 	printf("\t--qr-size=[pixels] -s\t qrcode module size in pixels (default: 10)\n");
 	printf("\n");
 
