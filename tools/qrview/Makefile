@@ -1,12 +1,18 @@
 DIRS+=tools/qrview
+DIRS+=src/sys
+DIRS+=src/compat
+DIRS+=src/compat/windows
+
 qrview=$(o)/tools/qrview/qrview
 
-qrview_OBJECTS=$(addprefix $(o)/tools/qrview/, qrview win asc icon)
+CFLAGS+=-I$(s)/tools/qrview
+
+qrview_OBJECTS=$(addprefix $(o)/tools/qrview/, qrview win asc icon pid)
+qrview_OBJECTS+=$(addprefix $(o)/src/sys/, exit)
 
 ifdef CONFIG_WINDOWS
-qrview_OBJECTS+=$(addprefix $(o)/tools/qrview/, gdi)
+qrview_OBJECTS+=$(addprefix $(o)/src/compat/windows/, gdi lockf fsync kill file errno)
 endif
-
 ifdef CONFIG_DARWIN
 qrview_OBJECTS+=$(addprefix $(o)/tools/qrview/, quartz)
 endif
@@ -32,7 +38,7 @@ $(o)/tools/qrview/qrview.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/icon.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/win.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/enc.o: CFLAGS+=$(qrview_CFLAGS)
-$(o)/tools/qrview/gdi.o: CFLAGS+=$(qrview_CFLAGS)
+$(o)/src/compat/windows/gdi.o: CFLAGS+=$(qrview_CFLAGS)
 $(o)/tools/qrview/quartz.o: CFLAGS+=$(qrview_CFLAGS)
 
 PROGS+=$(qrview)

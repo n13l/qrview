@@ -6,14 +6,22 @@
  *
  */
 
+#include <sys/missing.h>
+#include <sys/compiler.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <string.h>
 #include <qrencode.h>
 #include "private.h"
+#include "pid.h"
+
+char home[MAXPATHLEN];
 
 const char *uri;
+static const char *name;
 
 uint32_t qr_size = 10;
 uint32_t fade = 1;
@@ -22,17 +30,19 @@ int timeout = 0;
 int alpha_max = 255;
 
 enum opt_long_e {
-	OPT_HELP    = 'h',
-	OPT_VERSION = 'V',
-	OPT_TIMEOUT = 't',
-	OPT_QR_SIZE = 's',
-	OPT_ALPHA   = 'a',
+	OPT_HELP     = 'h',
+	OPT_NAME     = 'n',
+	OPT_VERSION  = 'V',
+	OPT_TIMEOUT  = 't',
+	OPT_QR_SIZE  = 's',
+	OPT_ALPHA    = 'a',
 };
 
 static int opt;
-static const char *opt_cmd = "hVt:s:a:";
+static const char *opt_cmd = "hVt:s:a:n:";
 static struct option opt_long[] = {
 	{"help"    ,0, 0, OPT_HELP    },
+	{"name"    ,1, 0, OPT_NAME    },
 	{"timeout" ,0, 0, OPT_TIMEOUT },
 	{"version" ,0, 0, OPT_VERSION },
 	{"qr-size" ,1, 0, OPT_QR_SIZE },
@@ -56,6 +66,7 @@ usage(int code)
 {
 	printf("Usage: qrview <commands-and-parameters> <uri>\n\n");
 	printf("\t--help,            -h\t help\n");
+	printf("\t--name,            -n\t instance name\n");
 	printf("\t--version,         -V\t package version\n");
 	printf("\t--timeout,         -t\t exit after number of seconds\n");
 	printf("\t--alpha,           -a\t final alpha channel value [0-255]\n");
@@ -97,9 +108,39 @@ giveup(const char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
+static struct pid_file *pid_file;
+
+static int
+lock_instance(void)
+{
+	char path[MAXPATHLEN];
+
+	if (!name)
+		return 0;
+
+	__compat_get_home_dir(home, sizeof(home) - 1);
+	snprintf(path, sizeof(path) - 1, "%s/.qrview-%s.pid", home, name);
+
+	if (!(pid_file = pid_file_lock(path))) {
+		die("cant lock pid file=%s\n", path);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int
+unlock_instance(void)
+{
+	if (!pid_file)
+		return 1;
+	return pid_file_unlock(pid_file);
+}
+
 int
 main(int argc, char *argv[]) 
 {
+	QRcode *qr = NULL;
 #ifdef CONFIG_WINDOWS
 	win32_io_init();
 #endif
@@ -109,7 +150,10 @@ main(int argc, char *argv[])
 		case OPT_HELP:
 		case '?':
 			usage(0);
-		break;
+			break;
+                case OPT_NAME:
+                        name = strdup(optarg);
+			break;
 		case OPT_VERSION:
 			version();
 			exit(EXIT_SUCCESS);
@@ -142,7 +186,10 @@ main(int argc, char *argv[])
 	if (!(uri = argv[argc - 1]))
 		usage(2);
 
-	QRcode *qr = QRcode_encodeString8bit(uri , QR_MODE_8, QR_ECLEVEL_H);
+	if (lock_instance())
+		goto exit;
+
+	qr = QRcode_encodeString8bit(uri , QR_MODE_8, QR_ECLEVEL_H);
 	if (qr == NULL)
 		goto exit;
 
@@ -154,6 +201,8 @@ main(int argc, char *argv[])
 	main_window (argc, argv, &surface);
 
 exit:
-	QRcode_free(qr);
+	if (qr)
+		QRcode_free(qr);
+	unlock_instance();
 	return EXIT_SUCCESS;
 }
