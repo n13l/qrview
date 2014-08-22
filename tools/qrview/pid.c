@@ -62,9 +62,14 @@ pid_verify(struct pid_file *file)
 	if ((file->pid = getpid()) == -1)
 		return -1;
 
-	if (file->pid != pid_read(file))
+	int pid = pid_read(file);
+	if (pid == 0)
+		return 0;
+
+	if ((kill(pid, 0) == 0))
 		return -1;
 
+	pid_write(file);
 	return 0;
 }
 
@@ -74,6 +79,12 @@ pid_file_lock(const char *path)
 	struct pid_file *file = malloc(sizeof(*file));
 	snprintf(file->path, sizeof(file->path) - 1, "%s", path);
 
+#ifdef CONFIG_WINDOWS
+	file->mode = 0;
+#else
+	file->mode = 0644;
+#endif
+	unlink(file->path);
 	struct stat st;
 	if ((file->fd = open(file->path, PID_FLAGS, file->mode)) == -1)
 		goto locked;
@@ -85,7 +96,7 @@ pid_file_lock(const char *path)
         file->ino = st.st_ino;
 	file->size = st.st_size;
 
-	if ((lockf(file->fd, F_TLOCK, file->size)) == -1)
+	if ((lockf(file->fd, F_TLOCK, 0)) == -1)
 		goto locked;
 
 	if (pid_verify(file) == -1)

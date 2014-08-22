@@ -14,10 +14,10 @@ __compat_perror(void)
 	LPTSTR errb = NULL;
 	DWORD dw = GetLastError();
 
-	if (FormatMessage(MSG_FLAGS, NULL, dw, LANG_ID, (LPTSTR)&errb, 0, NULL ))
+	if (!FormatMessage(MSG_FLAGS, NULL, dw, LANG_ID, (LPTSTR)&errb, 0, NULL ))
 		goto failed;
 
-	sys_dbg("sys: %d %d %s", (int)dw, (int)errb, (char *)errb);
+	sys_dbg("%d %d %s", (int)dw, (int)errb, (char *)errb);
 
 failed:
 	if (errb)
