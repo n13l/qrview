@@ -18,6 +18,10 @@
 #include "private.h"
 #include "pid.h"
 
+#ifndef MAXPATHLEN
+#define MAXPATHLEN 1024
+#endif
+
 char home[MAXPATHLEN];
 
 const char *uri;
@@ -26,7 +30,7 @@ static const char *name;
 uint32_t qr_size = 10;
 uint32_t fade = 1;
 uint32_t fade_interval = 10;
-int timeout = 0;
+int timeout = 30;
 int alpha_max = 255;
 
 enum opt_long_e {

@@ -14,5 +14,4 @@ quartz_init(GtkWidget *win)
 	[nswin setAlphaValue:1.0];
 
 	[nswin display];
-
 }

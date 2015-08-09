@@ -2,10 +2,13 @@ DIRS+=tools/qrview
 DIRS+=src/sys
 DIRS+=src/compat
 DIRS+=src/compat/windows
+DIRS+=src/compat/darwin
 
 qrview=$(o)/tools/qrview/qrview
 
 CFLAGS+=-I$(s)/tools/qrview
+# workarround macos bug
+#CFLAGS+=-DNS_RETURNS_INNER_POINTER=
 
 qrview_OBJECTS=$(addprefix $(o)/tools/qrview/, qrview win asc icon pid)
 qrview_OBJECTS+=$(addprefix $(o)/src/sys/, exit)
@@ -14,6 +17,7 @@ ifdef CONFIG_WINDOWS
 qrview_OBJECTS+=$(addprefix $(o)/src/compat/windows/, gdi lockf fsync kill file errno)
 endif
 ifdef CONFIG_DARWIN
+qrview_OBJECTS+=$(addprefix $(o)/src/compat/darwin/, home)
 qrview_OBJECTS+=$(addprefix $(o)/tools/qrview/, quartz)
 endif
 

@@ -17,7 +17,7 @@ static cairo_surface_t *cimage = NULL;
 static uint8_t window_size;
 static int bar_size;
 
-unsigned int alpha = 0;
+int alpha = 0;
 static enum state {
 	STARTING  = 0,
 	RUNNING   = 1,
@@ -25,7 +25,10 @@ static enum state {
 } state;
 
 static time_t start;
-static int ms = 1000;
+static int ms = 100;
+
+void                                                                            
+quartz_init(GtkWidget *win);
 
 static gboolean
 update(gpointer data)
@@ -41,6 +44,8 @@ update(gpointer data)
 		state = STOPPING;
 		gtk_widget_queue_draw(win);
 	}
+
+	gtk_widget_queue_draw(win);
 
 	return TRUE;
 }
@@ -163,11 +168,15 @@ window_setup(GtkWidget *w)
 	gtk_window_set_decorated(GTK_WINDOW(w), FALSE);
 	gtk_window_set_deletable(GTK_WINDOW(w), FALSE);
 	gtk_window_set_position(GTK_WINDOW(w), GTK_WIN_POS_CENTER);
-	gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN); 
-	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(w), FALSE);
-
 	gtk_widget_set_app_paintable(GTK_WIDGET(w), TRUE);
-#ifndef CONFIG_LINUX
+
+#ifdef CONFIG_WINDOWS
+	gtk_window_set_type_hint(GTK_WINDOW(w), GDK_WINDOW_TYPE_HINT_SPLASHSCREEN); 
+	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(w), FALSE); 
+	gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
+#endif
+
+#ifdef CONFIG_DARWIN
 	gtk_widget_set_double_buffered(GTK_WIDGET(w), FALSE);
 #endif
 	//g_signal_connect(w, "show", G_CALLBACK (realize), NULL);
@@ -254,21 +263,7 @@ main_window(int argc, char *argv[], struct surface *surface)
 {
 	gtk_init (&argc, &argv);
 
-#ifdef MAC_INTEGRATION
-        GtkosxApplication *osx = g_object_new(GTKOSX_TYPE_APPLICATION, NULL);
-#endif
-
 	GdkPixbuf *icon_pix = gdk_pixbuf_from_pixdata((const GdkPixdata *)&icon, FALSE, NULL);
-
-	status = gtk_status_icon_new();
-
-	if (status) {
-		char *tip  = "LGPL QRView (c) 2014 Daniel Kubec <niel@rtfm.cz>";
-		gtk_status_icon_set_from_pixbuf(status, icon_pix);
-		gtk_status_icon_set_tooltip_text(status,tip);
-		gtk_status_icon_set_visible(status, TRUE);
-		gboolean emb = gtk_status_icon_is_embedded(status);
-	}
 
 	win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
@@ -283,7 +278,7 @@ main_window(int argc, char *argv[], struct surface *surface)
 	alpha = 0;
 
 	gtk_widget_show (win);
-	//gtk_widget_hide (win);
+	gtk_widget_hide (win);
 
 #ifdef CONFIG_WINDOWS
 	gdi_init(win);
@@ -291,17 +286,15 @@ main_window(int argc, char *argv[], struct surface *surface)
 #ifdef CONFIG_DARWIN
 	quartz_init(win);
 #endif
-	//gtk_widget_show (win);
+	gtk_widget_show (win);
 	gtk_window_set_keep_above(GTK_WINDOW(win), TRUE);
+	gtk_widget_show (win);
 
-	if (timeout)
-		g_timeout_add(ms, update, win);
+	int tid;
+	tid = g_timeout_add(ms, update, win);
+
 	gtk_widget_queue_draw(win);
-
 	gtk_main ();
-
-	if (status)
-		gtk_status_icon_set_visible(status, FALSE);
 
 	return EXIT_SUCCESS;
 }

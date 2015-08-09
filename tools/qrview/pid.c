@@ -1,4 +1,6 @@
+#ifdef CONFIG_WINDOWS
 #include <compat/windows.h>
+#endif
 
 #include <sys/compiler.h>
 #include <sys/missing.h>
@@ -8,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <sys/cdefs.h>
 #include <sys/fcntl.h>

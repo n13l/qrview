@@ -223,8 +223,8 @@ ifdef CONFIG_WINDOWS
 	$(call pkg-config-package,gtk+-win32-3.0-static)
 endif
 ifdef CONFIG_DARWIN
-#	$(call pkg-config-package,gtk+-quartz-3.0)
-	$(call pkg-config-package,gtk-mac-integration-gtk3)
+	$(call pkg-config-package,gtk+-quartz-3.0)
+#	$(call pkg-config-package,gtk-mac-integration-gtk3)
 endif
 	$(call pkg-config-package,libqrencode)
 	@printf "\n"

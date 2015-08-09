@@ -12,8 +12,8 @@
 #include <gdk-pixbuf/gdk-pixdata.h>
 
 #ifdef MAC_INTEGRATION
-#include <gtkmacintegration/gtkosxapplication.h>
-#include <gtkmacintegration/gtk-mac-integration.h>
+#include <gtkmacintegration-gtk3/gtkosxapplication.h>
+#include <gtkmacintegration-gtk3/gtk-mac-integration.h>
 
 void quartz_init(GtkWidget *win);
 #endif
@@ -103,7 +103,7 @@ gdi_on_draw(GtkWidget *w, cairo_t *ctx, gpointer p);
 #endif
 void
 win32_io_init(void);
-extern unsigned int alpha;
+extern int alpha;
 
 extern int timeout;
 extern int alpha_max;
